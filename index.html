@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lennon Pui - Unity & AR Developer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d1810;
+            overflow-x: hidden;
+            cursor: none;
+            background: linear-gradient(135deg, #1a0f0a 0%, #2d1810 25%, #4a2c1a 50%, #2d1810 75%, #1a0f0a 100%);
+            min-height: 100vh;
+        }
+
+        /* Fire Cursor Styles */
+        .cursor {
+            position: fixed;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: difference;
+            transition: none;
+        }
+
+        .cursor-core {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #ff6b35 0%, #ff4757 50%, #ff3742 100%);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #ff4757, 0 0 20px #ff6b35, 0 0 30px #ff3742;
+        }
+
+        .flame {
+            position: absolute;
+            border-radius: 50%;
+            animation: flicker 0.3s infinite alternate;
+        }
+
+        .flame-1 {
+            width: 6px;
+            height: 12px;
+            background: linear-gradient(to top, #ff6b35, #ffa502);
+            left: 9px;
+            top: 2px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation-delay: 0s;
+        }
+
+        .flame-2 {
+            width: 4px;
+            height: 8px;
+            background: linear-gradient(to top, #ff4757, #ff6b35);
+            left: 16px;
+            top: 6px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation-delay: 0.1s;
+        }
+
+        .flame-3 {
+            width: 5px;
+            height: 10px;
+            background: linear-gradient(to top, #ff3742, #ff4757);
+            left: 3px;
+            top: 4px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation-delay: 0.2s;
+        }
+
+        .cursor-trail {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #ff6b35 0%, #ff4757 70%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            animation: trailFade 0.8s ease-out forwards;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-2deg); opacity: 0.8; }
+            100% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+        }
+
+        @keyframes trailFade {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.3); }
+        }
+
+        /* AR/Unity Background Elements */
+        .bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .ar-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+            color: #ff6b35;
+            font-size: 2rem;
+        }
+
+        .unity-cube {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            opacity: 0.08;
+            animation: rotateCube 15s infinite linear;
+        }
+
+        .ar-marker {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px solid #ff6b35;
+            opacity: 0.06;
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        .code-symbol {
+            position: absolute;
+            font-family: 'Courier New', monospace;
+            color: #ffa502;
+            opacity: 0.05;
+            font-size: 1.5rem;
+            animation: codeFloat 25s infinite linear;
+        }
+
+        @keyframes float {
+            from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+        }
+
+        @keyframes rotateCube {
+            from { transform: rotateX(0deg) rotateY(0deg); }
+            to { transform: rotateX(360deg) rotateY(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.06; }
+            50% { transform: scale(1.2); opacity: 0.12; }
+        }
+
+        @keyframes codeFloat {
+            from { transform: translateY(100vh) rotate(0deg); }
+            to { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        /* Header & Navigation */
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(26, 15, 10, 0.9);
+            backdrop-filter: blur(15px);
+            padding: 1rem 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #d4a574;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-menu a:hover {
+            color: #ff6b35;
+            text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            transition: width 0.3s ease;
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-content {
+            animation: slideInLeft 1s ease-out;
+        }
+
+        .hero-title {
+            position: relative;
+            font-size: 4rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b35, #ffa502, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .scatter-text {
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #d4a574;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(212, 165, 116, 0.3);
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            color: #b8936a;
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 107, 53, 0.6);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #ff6b35;
+            border: 2px solid #ff6b35;
+        }
+
+        .btn-secondary:hover {
+            background: #ff6b35;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .hero-image {
+            text-align: center;
+            animation: slideInRight 1s ease-out;
+        }
+
+        .profile-img {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(255, 107, 53, 0.3);
+            overflow: hidden;
+            border: 5px solid #ff6b35;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .profile-img::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .profile-placeholder {
+            font-size: 6rem;
+            color: #fff;
+            z-index: 2;
+        }
+
+        /* Sections */
+        .section {
+            padding: 6rem 0;
+            background: rgba(26, 15, 10, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 107, 53, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #b8936a;
+            margin-bottom: 4rem;
+            font-size: 1.1rem;
+        }
+
+        /* Projects Section */
+        .projects {
+            background: rgba(26, 15, 10, 0.9);
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .project-card {
+            background: rgba(45, 24, 16, 0.8);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            cursor: none;
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(255, 107, 53, 0.3);
+            border-color: rgba(255, 107, 53, 0.6);
+        }
+
+        .project-card.faded {
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+
+        .project-image {
+            height: 250px;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(45deg, #45241a, #6b3829);
+        }
+
+        .project-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #ff6b35;
+            background: linear-gradient(135deg, #2d1810, #45241a);
+        }
+
+        .project-content {
+            padding: 2rem;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .project-title {
+            font-size: 1.4rem;
+            color: #d4a574;
+            margin: 0;
+        }
+
+        .project-date {
+            color: #ff6b35;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .project-description {
+            color: #b8936a;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .project-tag {
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        /* Skills Section */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .skill-category {
+            background: rgba(45, 24, 16, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .skill-category:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 53, 0.6);
+        }
+
+        .skill-category h3 {
+            color: #d4a574;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .skill-category h3 i {
+            color: #ff6b35;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .skill-tag:hover {
+            background: rgba(255, 107, 53, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* About Section */
+        .about {
+            background: rgba(26, 15, 10, 0.8);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .about-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(45, 24, 16, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 53, 0.6);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+        }
+
+        .stat-label {
+            color: #b8936a;
+            font-weight: 500;
+        }
+
+        .about-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #b8936a;
+        }
+
+        .about-text p {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Experience Section */
+        .experience-timeline {
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .experience-timeline::before {
+            content: '';
+            position: absolute;
+            left: 2rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #ff6b35, #ffa502);
+        }
+
+        .experience-item {
+            position: relative;
+            margin-left: 5rem;
+            margin-bottom: 3rem;
+            background: rgba(45, 24, 16, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .experience-item:hover {
+            transform: translateX(10px);
+            border-color: rgba(255, 107, 53, 0.6);
+        }
+
+        .experience-item::before {
+            content: '';
+            position: absolute;
+            left: -4.5rem;
+            top: 2rem;
+            width: 1rem;
+            height: 1rem;
+            background: #ff6b35;
+            border-radius: 50%;
+            border: 3px solid rgba(26, 15, 10, 0.8);
+            box-shadow: 0 0 0 3px #ff6b35;
+        }
+
+        .experience-title {
+            color: #d4a574;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .experience-company {
+            color: #ff6b35;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .experience-period {
+            color: #b8936a;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .experience-description {
+            color: #b8936a;
+            line-height: 1.6;
+        }
+
+        /* Contact Section - Enhanced Layout */
+        .contact {
+            background: rgba(26, 15, 10, 0.9);
+        }
+
+        .contact-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        .contact-info {
+            background: rgba(45, 24, 16, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(74, 44, 26, 0.5);
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .contact-item:hover {
+            transform: translateX(5px);
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .contact-details h4 {
+            color: #d4a574;
+            margin-bottom: 0.2rem;
+        }
+
+        .contact-details p {
+            color: #b8936a;
+            font-size: 0.9rem;
+        }
+
+        .contact-form {
+            background: rgba(45, 24, 16, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            color: #d4a574;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(74, 44, 26, 0.5);
+            color: #d4a574;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(26, 15, 10, 0.95);
+            color: #d4a574;
+            text-align: center;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .social-link {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b35, #ffa502);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+            cursor: none;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px) scale(1.1);
+        }
+
+        /* Modal Styles */
+        .project-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 15, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .project-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: rgba(45, 24, 16, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            position: relative;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .project-modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #d4a574;
+            font-size: 2rem;
+            cursor: none;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #ff6b35;
+        }
+
+        .modal-title {
+            color: #d4a574;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-description {
+            color: #b8936a;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .modal-features {
+            color: #b8936a;
+            line-height: 1.8;
+        }
+
+        .modal-features h4 {
+            color: #ff6b35;
+            margin-bottom: 1rem;
+        }
+
+        /* Animations */
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-container,
+            .about-content,
+            .contact-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .about-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .experience-timeline::before {
+                left: 1rem;
+            }
+
+            .experience-item {
+                margin-left: 3rem;
+            }
+
+            .experience-item::before {
+                left: -2.5rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 1rem;
+                padding: 2rem;
+                max-height: 90vh;
+            }
+
+            body {
+                cursor: auto;
+            }
+
+            .cursor {
+                display: none;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Section reveal animation */
+        .section {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.6s ease;
+        }
+
+        .section.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Fire Cursor -->
+    <div class="cursor">
+        <div class="cursor-core"></div>
+        <div class="flame flame-1"></div>
+        <div class="flame flame-2"></div>
+        <div class="flame flame-3"></div>
+    </div>
+
+    <!-- AR/Unity Background -->
+    <div class="bg-canvas">
+        <!-- AR Elements -->
+        <div class="ar-element" style="top: 15%; left: 10%; animation-delay: 0s;">
+            <i class="fas fa-cube"></i>
+        </div>
+        <div class="ar-element" style="top: 25%; right: 15%; animation-delay: 2s;">
+            <i class="fas fa-vr-cardboard"></i>
+        </div>
+        <div class="ar-element" style="bottom: 30%; left: 20%; animation-delay: 4s;">
+            <i class="fas fa-mobile-alt"></i>
+        </div>
+        <div class="ar-element" style="top: 60%; right: 25%; animation-delay: 6s;">
+            <i class="fas fa-eye"></i>
+        </div>
+        
+        <!-- Unity Cubes -->
+        <div class="unity-cube" style="top: 20%; left: 70%; animation-delay: 1s;"></div>
+        <div class="unity-cube" style="bottom: 40%; right: 10%; animation-delay: 3s;"></div>
+        <div class="unity-cube" style="top: 70%; left: 30%; animation-delay: 5s;"></div>
+        
+        <!-- AR Markers -->
+        <div class="ar-marker" style="top: 10%; right: 30%; animation-delay: 2s;"></div>
+        <div class="ar-marker" style="bottom: 20%; left: 50%; animation-delay: 4s;"></div>
+        <div class="ar-marker" style="top: 50%; left: 15%; animation-delay: 6s;"></div>
+        
+        <!-- Code Symbols -->
+        <div class="code-symbol" style="left: 5%; animation-delay: 0s;">{ }</div>
+        <div class="code-symbol" style="left: 15%; animation-delay: 3s;">C#</div>
+        <div class="code-symbol" style="right: 5%; animation-delay: 6s;">< /></div>
+        <div class="code-symbol" style="right: 20%; animation-delay: 9s;">AR</div>
+        <div class="code-symbol" style="left: 35%; animation-delay: 12s;">3D</div>
+        <div class="code-symbol" style="right: 35%; animation-delay: 15s;">VR</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">Lennon Pui</div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#skills">Skills</a></li>
+                    <li><a href="#projects">Projects</a></li>
+                    <li><a href="#experience">Experience</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title" id="heroTitle">Lennon Pui</h1>
+                <p class="hero-subtitle">Unity & AR Developer</p>
+                <p class="hero-description">
+                    I'm a Unity & AR developer who builds immersive digital experiences using Unity, C#, and real-time 3D tools.
+                    From mobile AR onboarding to 3D product showcases, I help teams create interactive apps that inform and inspire.
+                    I'm open to full-time roles or collaborative freelance projects, and I love working with teams that value clean logic, creative problem-solving, and user-first design.
+                </p>
+                <div class="cta-buttons">
+                    <a href="#projects" class="btn btn-primary">
+                        <i class="fas fa-eye"></i>
+                        View My Work
+                    </a>
+                    <a href="#contact" class="btn btn-secondary">
+                        <i class="fas fa-envelope"></i>
+                        Get In Touch
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="profile-img">
+                    <div class="profile-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section about">
+        <div class="container">
+            <h2 class="section-title">About Me</h2>
+            <p class="section-subtitle">Passionate developer with a focus on AR/VR and interactive experiences</p>
+            
+            <div class="about-content">
+                <div class="about-stats">
+                    <div class="stat-card">
+                        <span class="stat-number">3+</span>
+                        <span class="stat-label">Major Projects</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">4</span>
+                        <span class="stat-label">Months Internship</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">AR</span>
+                        <span class="stat-label">Specialization</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">2025</span>
+                        <span class="stat-label">Graduation</span>
+                    </div>
+                </div>
+                
+                <div class="about-text">
+                    <p>I'm a final-year Computer Science student specializing in Unity and AR development. I've built real-world AR apps, including onboarding tools and interactive 3D modules, and I'm currently developing an AR-based final year project.</p>
+                    
+                    <p>Fast learner, strong in C#, Unity, Firebase, and always ready to build immersive or software-driven solutions.</p>
+                    
+                    <p>Open to roles in Unity, AR/VR, or general software development.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="section">
+        <div class="container">
+            <h2 class="section-title">Technical Skills</h2>
+            <p class="section-subtitle">Technologies and tools I work with</p>
+            
+            <div class="skills-grid">
+                <div class="skill-category">
+                    <h3><i class="fas fa-code"></i> Programming Languages</h3>
+                    <div class="skill-list">
+                        <span class="skill-tag">C#</span>
+                        <span class="skill-tag">C++</span>
+                        <span class="skill-tag">Python</span>
+                        <span class="skill-tag">.NET Framework</span>
+                    </div>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-tools"></i> Development Tools</h3>
+                    <div class="skill-list">
+                        <span class="skill-tag">Unity</span>
+                        <span class="skill-tag">Visual Studio</span>
+                        <span class="skill-tag">Visual Studio Code</span>
+                        <span class="skill-tag">Git</span>
+                        <span class="skill-tag">Blender</span>
+                        <span class="skill-tag">Firebase</span>
+                    </div>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-cube"></i> AR/VR & 3D</h3>
+                    <div class="skill-list">
+                        <span class="skill-tag">AR Foundation</span>
+                        <span class="skill-tag">ARCore</span>
+                        <span class="skill-tag">Vuforia</span>
+                        <span class="skill-tag">Unity UI</span>
+                        <span class="skill-tag">3D Modeling</span>
+                    </div>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-lightbulb"></i> Soft Skills</h3>
+                    <div class="skill-list">
+                        <span class="skill-tag">Problem-Solving</span>
+                        <span class="skill-tag">Analytical Thinking</span>
+                        <span class="skill-tag">Teamwork</span>
+                        <span class="skill-tag">Communication</span>
+                        <span class="skill-tag">Adaptability</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="section projects">
+        <div class="container">
+            <h2 class="section-title">Featured Projects</h2>
+            <p class="section-subtitle">Showcasing my development experience and achievements</p>
+            
+            <div class="projects-grid">
+                <div class="project-card" data-project="ar-fyp">
+                    <div class="project-image">
+                        <div class="project-placeholder">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-meta">
+                            <h3 class="project-title">AR-Based Final Year Project</h3>
+                            <span class="project-date">June 2025</span>
+                        </div>
+                        <p class="project-description">
+                            Developing an advanced AR application using Unity and AR Foundation, featuring interactive 3D models, 
+                            real-world tracking, and Firebase integration for user authentication.
+                        </p>
+                        <div class="project-tags">
+                            <span class="project-tag">Unity</span>
+                            <span class="project-tag">AR Foundation</span>
+                            <span class="project-tag">C#</span>
+                            <span class="project-tag">Firebase</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="project-card" data-project="ar-recruitment">
+                    <div class="project-image">
+                        <div class="project-placeholder">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-meta">
+                            <h3 class="project-title">AR Recruitment App</h3>
+                            <span class="project-date">Nov 2024</span>
+                        </div>
+                        <p class="project-description">
+                            Engineered a fully functional AR onboarding application for Asiasoft Business Solution using Unity and Vuforia. 
+                            Features personalized welcome screens and interactive 3D menus.
+                        </p>
+                        <div class="project-tags">
+                            <span class="project-tag">Unity</span>
+                            <span class="project-tag">Vuforia</span>
+                            <span class="project-tag">C#</span>
+                            <span class="project-tag">AR</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="project-card" data-project="car-viewer">
+                    <div class="project-image">
+                        <div class="project-placeholder">
+                            <i class="fas fa-car"></i>
+                        </div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-meta">
+                            <h3 class="project-title">3D Car Viewer Module</h3>
+                            <span class="project-date">Oct 2024</span>
+                        </div>
+                        <p class="project-description">
+                            Built a customizable 3D car viewer with Unity and Blender-crafted models. Features rotation controls, 
+                            color customization, brand filters, and optimized rendering for mobile devices.
+                        </p>
+                        <div class="project-tags">
+                            <span class="project-tag">Unity</span>
+                            <span class="project-tag">Blender</span>
+                            <span class="project-tag">C#</span>
+                            <span class="project-tag">3D Modeling</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section id="experience" class="section">
+        <div class="container">
+            <h2 class="section-title">Professional Experience</h2>
+            <p class="section-subtitle">My journey in software development</p>
+            
+            <div class="experience-timeline">
+                <div class="experience-item">
+                    <h3 class="experience-title">Software Programmer Intern</h3>
+                    <p class="experience-company">Asiasoft Business Solution, Sarawak</p>
+                    <p class="experience-period">August 2024 - November 2024</p>
+                    <div class="experience-description">
+                        <ul>
+                            <li>Developed a Unity FPS Prototype in 3 weeks, implementing player movement, shooting mechanics, and visual effects using C# and Unity</li>
+                            <li>Built an AR Recruitment App using Unity, Vuforia, and C#, featuring interactive 3D menus triggered by logo markers</li>
+                            <li>Created a 3D Car Viewer Module with customizable rotating models, color change options, and brand-based filters</li>
+                            <li>Rapidly upskilled in Unity and Blender through self-directed learning within 2 weeks</li>
+                            <li>Collaborated with supervisor and team to refine deliverables and improve user experience</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="experience-item">
+                    <h3 class="experience-title">Day Trip Organizer</h3>
+                    <p class="experience-company">Asia Pacific University, Malaysia</p>
+                    <p class="experience-period">2023</p>
+                    <div class="experience-description">
+                        <ul>
+                            <li>Led planning and execution of a university day trip, managing logistics, budgeting, and fundraising</li>
+                            <li>Demonstrated leadership, organization, and teamwork in coordinating group activities</li>
+                            <li>Donated portion of funds to university initiatives, showcasing community engagement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section contact">
+        <div class="container">
+            <h2 class="section-title">Get In Touch</h2>
+            <p class="section-subtitle">Let's discuss opportunities and collaborations</p>
+            
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3 style="color: #d4a574; margin-bottom: 2rem;">Contact Information</h3>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Phone</h4>
+                            <p>016-205-3319</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <p>lennonpui2003@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Location</h4>
+                            <p>Malaysia</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Education</h4>
+                            <p>Computer Science, Asia Pacific University</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Availability</h4>
+                            <p>Available from August 2025</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-form">
+                    <h3 style="color: #d4a574; margin-bottom: 2rem;">Send me a message</h3>
+                    <form>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First Name</label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lastName">Last Name</label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" placeholder="Tell me about your project or opportunity..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            <i class="fas fa-paper-plane"></i>
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="social-links">
+                <a href="mailto:lennonpui2003@gmail.com" class="social-link">
+                    <i class="fas fa-envelope"></i>
+                </a>
+                <a href="tel:016-205-3319" class="social-link">
+                    <i class="fas fa-phone"></i>
+                </a>
+                <a href="#" class="social-link">
+                    <i class="fab fa-linkedin"></i>
+                </a>
+                <a href="#" class="social-link">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+            <p>&copy; 2025 Lennon Pui. All rights reserved.</p>
+            <p>Unity & AR Developer | Computer Science Student</p>
+        </div>
+    </footer>
+
+    <!-- Project Detail Modals -->
+    <div class="project-modal" id="modal-ar-fyp">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">AR-Based Final Year Project</h2>
+            <p class="modal-description">
+                My capstone project focuses on developing an advanced AR application that demonstrates the practical applications 
+                of augmented reality in real-world scenarios. The project showcases my ability to integrate multiple technologies 
+                and create a cohesive, user-friendly experience.
+            </p>
+            <div class="modal-features">
+                <h4>Key Features & Technologies:</h4>
+                <ul>
+                    <li>Unity 3D engine for cross-platform development</li>
+                    <li>AR Foundation for robust augmented reality functionality</li>
+                    <li>Firebase integration for user authentication and data management</li>
+                    <li>Real-world object tracking and plane detection</li>
+                    <li>Interactive 3D models with gesture controls</li>
+                    <li>Optimized performance for mobile devices</li>
+                    <li>User interface design following modern UX principles</li>
+                </ul>
+                
+                <h4>Technical Challenges Solved:</h4>
+                <ul>
+                    <li>Implementing stable AR tracking in various lighting conditions</li>
+                    <li>Optimizing 3D model rendering for mobile performance</li>
+                    <li>Creating intuitive gesture-based interactions</li>
+                    <li>Integrating cloud-based user data synchronization</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-modal" id="modal-ar-recruitment">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">AR Recruitment App</h2>
+            <p class="modal-description">
+                Developed during my internship at Asiasoft Business Solution, this AR application revolutionizes the employee 
+                onboarding experience by providing an interactive, engaging welcome process for new hires. The app demonstrates 
+                practical business applications of AR technology.
+            </p>
+            <div class="modal-features">
+                <h4>Key Features & Technologies:</h4>
+                <ul>
+                    <li>Unity 3D with Vuforia SDK for marker-based AR tracking</li>
+                    <li>Company logo recognition for AR trigger activation</li>
+                    <li>Personalized welcome screens with employee information</li>
+                    <li>Interactive 3D menu navigation system</li>
+                    <li>Company information presentation in AR space</li>
+                    <li>Smooth animations and transitions for professional appearance</li>
+                </ul>
+                
+                <h4>Business Impact:</h4>
+                <ul>
+                    <li>Enhanced new employee engagement during onboarding</li>
+                    <li>Modernized company image through innovative technology use</li>
+                    <li>Reduced onboarding time through interactive information delivery</li>
+                    <li>Created memorable first impression for new hires</li>
+                </ul>
+                
+                <h4>Technical Achievements:</h4>
+                <ul>
+                    <li>Reliable logo detection across different devices and lighting</li>
+                    <li>Responsive UI design for various screen sizes</li>
+                    <li>Performance optimization for smooth AR experience</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-modal" id="modal-car-viewer">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">3D Car Viewer Module</h2>
+            <p class="modal-description">
+                A comprehensive 3D visualization tool created for automotive presentations and client demonstrations. 
+                This project showcases my skills in 3D modeling, Unity development, and creating user-friendly interfaces 
+                for complex 3D interactions.
+            </p>
+            <div class="modal-features">
+                <h4>Key Features & Technologies:</h4>
+                <ul>
+                    <li>Unity 3D engine for real-time 3D rendering</li>
+                    <li>Custom 3D car models created in Blender</li>
+                    <li>Intuitive rotation and zoom controls</li>
+                    <li>Dynamic color customization system</li>
+                    <li>Brand-based filtering and categorization</li>
+                    <li>Mobile-optimized rendering pipeline</li>
+                    <li>Modular architecture for easy integration</li>
+                </ul>
+                
+                <h4>3D Modeling & Animation:</h4>
+                <ul>
+                    <li>Detailed car models with proper topology and UV mapping</li>
+                    <li>Efficient LOD (Level of Detail) system for performance</li>
+                    <li>Realistic materials and lighting setup</li>
+                    <li>Smooth rotation animations and transitions</li>
+                </ul>
+                
+                <h4>Technical Implementation:</h4>
+                <ul>
+                    <li>Touch and mouse input handling for camera controls</li>
+                    <li>Shader programming for dynamic color changes</li>
+                    <li>Memory management for multiple 3D models</li>
+                    <li>Responsive UI adaptation for different screen ratios</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fire Cursor Implementation
+        const cursor = document.querySelector('.cursor');
+        const trailElements = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let mouseSpeed = 0;
+
+        // Track mouse movement
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Calculate speed
+            const deltaX = mouseX - lastMouseX;
+            const deltaY = mouseY - lastMouseY;
+            mouseSpeed = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            cursor.style.left = mouseX - 12 + 'px';
+            cursor.style.top = mouseY - 12 + 'px';
+            
+            // Create trail effect when moving fast
+            if (mouseSpeed > 2) {
+                createTrail(mouseX, mouseY, mouseSpeed);
+            }
+            
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+        });
+
+        function createTrail(x, y, speed) {
+            const trail = document.createElement('div');
+            trail.className = 'cursor-trail';
+            trail.style.left = x - 4 + 'px';
+            trail.style.top = y - 4 + 'px';
+            
+            // Scale trail based on speed (max 3x size)
+            const scale = Math.min(1 + speed / 10, 3);
+            trail.style.transform = `scale(${scale})`;
+            
+            document.body.appendChild(trail);
+            
+            // Remove trail after animation
+            setTimeout(() => {
+                if (trail.parentNode) {
+                    trail.parentNode.removeChild(trail);
+                }
+            }, 800);
+        }
+
+        // Cursor hover effects
+        const hoverElements = document.querySelectorAll('a, button, .project-card, .btn, .nav-menu a, .social-link');
+        hoverElements.forEach(element => {
+            element.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'scale(1.5)';
+            });
+            element.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'scale(1)';
+            });
+        });
+
+        // Scattered Text Effect for Hero Title
+        function createScatteredText() {
+            const heroTitle = document.getElementById('heroTitle');
+            const text = heroTitle.textContent;
+            heroTitle.innerHTML = '';
+            
+            [...text].forEach((char, index) => {
+                if (char === ' ') {
+                    heroTitle.appendChild(document.createTextNode(' '));
+                } else {
+                    const span = document.createElement('span');
+                    span.textContent = char;
+                    span.className = 'scatter-text';
+                    span.style.animationDelay = `${index * 0.1}s`;
+                    heroTitle.appendChild(span);
+                }
+            });
+
+            // Add mouse move effect to scatter text
+            document.addEventListener('mousemove', (e) => {
+                const scatterTexts = document.querySelectorAll('.scatter-text');
+                scatterTexts.forEach(text => {
+                    const rect = text.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    const distance = Math.sqrt(Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2));
+                    
+                    if (distance < 100) {
+                        const force = (100 - distance) / 100;
+                        const angle = Math.atan2(centerY - e.clientY, centerX - e.clientX);
+                        const moveX = Math.cos(angle) * force * 20;
+                        const moveY = Math.sin(angle) * force * 20;
+                        
+                        text.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                    } else {
+                        text.style.transform = 'translate(0, 0)';
+                    }
+                });
+            });
+        }
+
+        // Project Card Interactions
+        function setupProjectInteractions() {
+            const projectCards = document.querySelectorAll('.project-card');
+            
+            projectCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    projectCards.forEach(otherCard => {
+                        if (otherCard !== card) {
+                            otherCard.classList.add('faded');
+                        }
+                    });
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    projectCards.forEach(otherCard => {
+                        otherCard.classList.remove('faded');
+                    });
+                });
+
+                // Click to open modal
+                card.addEventListener('click', () => {
+                    const projectId = card.getAttribute('data-project');
+                    const modal = document.getElementById(`modal-${projectId}`);
+                    if (modal) {
+                        modal.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            });
+        }
+
+        // Modal Functionality
+        function setupModals() {
+            const modals = document.querySelectorAll('.project-modal');
+            const closeButtons = document.querySelectorAll('.modal-close');
+
+            closeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    button.closest('.project-modal').classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                });
+            });
+
+            modals.forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                        document.body.style.overflow = 'auto';
+                    }
+                });
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    modals.forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                const headerHeight = document.querySelector('.header').offsetHeight;
+                const targetPosition = target.offsetTop - headerHeight;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Header background change on scroll
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(26, 15, 10, 0.95)';
+                header.style.boxShadow = '0 2px 20px rgba(255, 107, 53, 0.3)';
+            } else {
+                header.style.background = 'rgba(26, 15, 10, 0.9)';
+                header.style.boxShadow = 'none';
+            }
+        });
+
+        // Reveal sections on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Form submission handler
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            const firstName = formData.get('firstName');
+            const lastName = formData.get('lastName');
+            const email = formData.get('email');
+            const message = formData.get('message');
+            
+            // Create mailto link
+            const mailtoLink = `mailto:lennonpui2003@gmail.com?subject=Portfolio Contact from ${firstName} ${lastName}&body=${encodeURIComponent(
+                `Name: ${firstName} ${lastName}\nEmail: ${email}\n\nMessage:\n${message}`
+            )}`;
+            
+            // Open email client
+            window.location.href = mailtoLink;
+            
+            // Show success message
+            alert('Thank you for your message! Your email client should open now.');
+            
+            // Reset form
+            this.reset();
+        });
+
+        // Add floating animation to profile image
+        function floatingAnimation() {
+            const profileImg = document.querySelector('.profile-img');
+            let direction = 1;
+            let position = 0;
+            
+            setInterval(() => {
+                position += direction * 0.5;
+                if (position > 10 || position < -10) {
+                    direction *= -1;
+                }
+                profileImg.style.transform = `translateY(${position}px)`;
+            }, 50);
+        }
+
+        // Add parallax effect to hero section
+        window.addEventListener('scroll', function() {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero');
+            const heroContent = document.querySelector('.hero-content');
+            const heroImage = document.querySelector('.hero-image');
+            
+            if (scrolled < window.innerHeight) {
+                heroContent.style.transform = `translateY(${scrolled * 0.5}px)`;
+                heroImage.style.transform = `translateY(${scrolled * 0.3}px)`;
+            }
+        });
+
+        // Initialize all effects
+        document.addEventListener('DOMContentLoaded', function() {
+            createScatteredText();
+            setupProjectInteractions();
+            setupModals();
+            floatingAnimation();
+            
+            // Initial reveal for hero section
+            document.querySelector('.hero').classList.add('revealed');
+        });
+
+        // Animate skill tags on hover
+        document.querySelectorAll('.skill-tag').forEach(tag => {
+            tag.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+                this.style.boxShadow = '0 4px 15px rgba(255, 107, 53, 0.3)';
+            });
+            
+            tag.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = 'none';
+            });
+        });
+
+        // Add click effect to buttons
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    background: rgba(255, 255, 255, 0.5);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s linear;
+                    pointer-events: none;
+                `;
+                
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Add ripple animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Enhanced flame animation for cursor when idle
+        let isMouseMoving = false;
+        let mouseIdleTimer;
+
+        document.addEventListener('mousemove', () => {
+            isMouseMoving = true;
+            clearTimeout(mouseIdleTimer);
+            
+            // Reset to normal flames when moving
+            const flames = document.querySelectorAll('.flame');
+            flames.forEach(flame => {
+                flame.style.animation = 'flicker 0.3s infinite alternate';
+            });
+            
+            mouseIdleTimer = setTimeout(() => {
+                isMouseMoving = false;
+                // Enhanced flame animation when idle
+                flames.forEach((flame, index) => {
+                    flame.style.animation = `flicker 0.2s infinite alternate ${index * 0.1}s`;
+                });
+            }, 100);
+        });
+
+        // Text color inversion effect on cursor hover
+        function setupTextInversion() {
+            const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, a, li, label');
+            
+            document.addEventListener('mousemove', (e) => {
+                textElements.forEach(element => {
+                    const rect = element.getBoundingClientRect();
+                    const cursorSize = 40; // Size of cursor effect area
+                    
+                    // Check if cursor is near the text element
+                    if (e.clientX >= rect.left - cursorSize && 
+                        e.clientX <= rect.right + cursorSize && 
+                        e.clientY >= rect.top - cursorSize && 
+                        e.clientY <= rect.bottom + cursorSize) {
+                        
+                        element.style.filter = 'invert(1)';
+                        element.style.transition = 'filter 0.1s ease';
+                    } else {
+                        element.style.filter = 'invert(0)';
+                    }
+                });
+            });
+        }
+
+        // Initialize text inversion
+        setupTextInversion();
+
+        // Add dynamic background particles
+        function createBackgroundParticles() {
+            const canvas = document.querySelector('.bg-canvas');
+            
+            // Create Unity logo particles
+            for (let i = 0; i < 3; i++) {
+                const unityLogo = document.createElement('div');
+                unityLogo.className = 'ar-element';
+                unityLogo.innerHTML = '<i class="fab fa-unity"></i>';
+                unityLogo.style.top = Math.random() * 100 + '%';
+                unityLogo.style.left = Math.random() * 100 + '%';
+                unityLogo.style.animationDelay = Math.random() * 20 + 's';
+                unityLogo.style.fontSize = (1.5 + Math.random()) + 'rem';
+                canvas.appendChild(unityLogo);
+            }
+            
+            // Create C# symbols
+            for (let i = 0; i < 4; i++) {
+                const csharp = document.createElement('div');
+                csharp.className = 'code-symbol';
+                csharp.textContent = 'C#';
+                csharp.style.left = Math.random() * 100 + '%';
+                csharp.style.animationDelay = Math.random() * 25 + 's';
+                csharp.style.fontSize = (1 + Math.random() * 0.8) + 'rem';
+                canvas.appendChild(csharp);
+            }
+        }
+
+        // Initialize background particles
+        createBackgroundParticles();
+    </script>
+</body>
+</html>
